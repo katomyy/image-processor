@@ -1,0 +1,48 @@
+services:
+  rabbit_mq:
+    image: rabbitmq:3.10.7-management
+    container_name: rabbit_mq
+    hostname: rabbitmq
+    restart: always
+    ports:
+      - '5672:5672'
+      - '15672:15672'
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    volumes:
+      - rabbit_mqdata:/var/lib/rabbitmq
+
+  producer:
+    build: ./producer
+    depends_on:
+      - rabbit_mq
+    volumes:
+      - ./producer:/usr/src/app/producer
+    environment:
+      - RABBITMQ_URL=amqp://guest:guest@rabbit_mq?connection_attempts=10&retry_delay=10
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+
+  consumer:
+    build: ./consumer
+    depends_on:
+      - rabbit_mq
+    volumes:
+      - ./consumer/output:/usr/src/app/consumer/output
+    environment:
+      - RABBITMQ_URL=amqp://guest:guest@rabbit_mq?connection_attempts=10&retry_delay=10
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+
+  consumer2:
+    build: ./consumer2
+    depends_on:
+      - rabbit_mq
+    environment:
+      - RABBITMQ_URL=amqp://guest:guest@rabbit_mq?connection_attempts=10&retry_delay=10
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+
+volumes:
+  rabbit_mqdata:
